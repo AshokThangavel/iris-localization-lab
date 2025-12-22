@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+  <Document name="LocalizationLab.ZPM">
+    <Module>
+      <Name>LocalizationLab</Name>
+      <ExternalName>iris-LocalizationLab</ExternalName>
+      <Version>1.0.0</Version>
+      <Description>Manage the string Localization</Description>
+      <Keywords>Terminal, COS</Keywords>
+      <Packaging>module</Packaging>
+      <Resource Name="LocalizationLab.PKG"/>
+      <LifecycleClass>%IPM.Lifecycle.Module</LifecycleClass>
+    </Module>
+  </Document>
+</Export>

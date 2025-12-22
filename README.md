@@ -39,6 +39,8 @@ docker-compose down
 ```
 ## 📖 How to Use
 
+Access the url http://localhost:52773/csp/user/LocalizationLab.StrLocalization.cls
+
 ### Managing Domains
 Select a domain from the **Left Panel** (Neutral Gray) to load the translation matrix. If no domain exists, use the **+ New Domain** button to start a new one.
 
@@ -53,7 +55,7 @@ Select a domain from the **Left Panel** (Neutral Gray) to load the translation m
 
 ## 📂 Project Structure
 
-* `Str.Localization.cls`: The core logic, containing both the CSP rendering and the server-side ObjectScript.
+* `LocalizationLab.StrLocalization.cls`: The core logic, containing both the CSP rendering and the server-side ObjectScript.
 * `README.md`: Documentation.
 
 ## 📜 License
