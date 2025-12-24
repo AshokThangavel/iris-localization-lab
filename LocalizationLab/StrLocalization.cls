@@ -9,8 +9,6 @@ ClassMethod OnRenderScreen()
 {
     Set currentNS = $Get(%request.Data("ns",1), $Namespace)
     Set currentDom = $Get(%request.Data("domain",1))
-    Set staticLangs = $ListBuild("DE","EN","EN-US","ES","FR","IT","JA","KO","NL","PT-BR","RU","UK","ZH-CN")
-
     &html<
     <div id="sidebar">
         <div class="sidebar-header">
@@ -18,41 +16,42 @@ ClassMethod OnRenderScreen()
             <select class="ns-select" onchange="location.href='?ns='+this.value">
     >
     Do ##class(%SYS.Namespace).ListAll(.nsList)
-    Set n = ""
-    For {
-        Set n = $Order(nsList(n)) Quit:n=""
+    Set n = "" For { Set n = $Order(nsList(n)) Quit:n=""
         Set sel = $Select(n=currentNS:"selected", 1:"")
         Write "<option value='"_n_"' "_sel_">"_n_"</option>",!
     }
     &html<
-        </select>
+            </select>
             <button class="btn btn-outline" onclick="createNewDomain()">+ New Domain</button>
         </div>
         <div class="domain-list">
     >
     New $Namespace
-    Try {
-        Set $Namespace = currentNS
-        Set dom = ""
-        For {
-            Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
+    Try { Set $Namespace = currentNS
+        Set dom = "" For { Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
             Set cls = $Select(dom=currentDom:"active", 1:"")
             Write "<a href='?ns="_currentNS_"&domain="_dom_"' class='domain-link "_cls_"'>"_dom_"</a>",!
         }
-    }
-    Catch {}
+    } Catch {}
     &html<
         </div>
     </div>
 
     <div id="main">
        <div class="header-bar">
-    <h3 style="margin:0; color:var(--isc-blue);">Localization Manager</h3>
+    <h3 style="margin:0; color:var(--isc-blue);">Localization Manager<span id="headerDomain"></span></h3>
     <div style="display:flex; gap:10px;">
         <input type="file" id="importFile" style="display:none" accept=".xml" onchange="handleFileSelect(this)">
         <button class="btn btn-outline" style="margin-top:0; width:auto;" onclick="document.getElementById('importFile').click()">
             <i class="fa fa-file-import"></i> Import XML
         </button>
+        <button class="btn btn-outline" onclick="exportDomain()">
+                    <i class="fa fa-file-export"></i> Export
+                </button>
+
+                <button class="btn btn-outline" onclick="openSettings(true)">
+                    <i class="fa fa-cog"></i>
+                </button>
         <button class="btn btn-teal" onclick="toggleAddForm()">+ Add New String</button>
     </div>
 </div>
@@ -101,40 +100,54 @@ ClassMethod OnRenderScreen()
             </form>
         </div>
 
+
+		    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">Export Configuration</div>
+            <div class="form-item" style="flex-direction: column; align-items: flex-start; gap:10px;">
+                <label style="font-size: 0.85em;">Target Export Directory</label>
+                <input type="text" id="exportDir" placeholder="e.g. C:\InterSystems\Exports\" style="width:100%;">
+            </div>
+            <div style="margin-top:20px; text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="closeSettings()">Cancel</button>
+                <button class="btn btn-teal" onclick="saveSettings()">Save & Close</button>
+            </div>
+        </div>
+    </div>
+
         <div class="scroll-area">
     >
-    If currentDom '= "" {
+    If (currentDom '= "") {
         New $Namespace
         Try {
             Set $Namespace = currentNS
-            Kill ids
-            Set l = ""
+            Kill ids Set l = ""
             For {
                 Set l = $Order(^IRIS.Msg(currentDom, l)) Quit:l=""
-                Set i = ""
-                For {
-                    Set i = $Order(^IRIS.Msg(currentDom, l, i)) Quit:i=""
-                    Set ids(i)=""
-                }
+                Set i = "" For { Set i = $Order(^IRIS.Msg(currentDom, l, i)) Quit:i=""  Set ids(i)="" }
             }
             Write "<table class='msg-table'><thead><tr><th style='width:140px'>MESSAGE ID</th>"
-            For idx=1:1:$ListLength(staticLangs) {
-                Write "<th>"_$ListGet(staticLangs, idx)_"</th>"
+
+            Set availableLangs =""
+            Set availableLangsArr = []
+            For {
+                Set availableLangs = $Order(^IRIS.Msg(currentDom, availableLangs))
+                Quit:availableLangs=""
+                Write "<th>"_availableLangs_"</th>"
+                Do availableLangsArr.%Push(availableLangs)
             }
             Write "</tr></thead><tbody>"
-            Set i = ""
-            For {
-                Set i = $Order(ids(i)) Quit:i=""
+            Set i = "" For { Set i = $Order(ids(i)) Quit:i=""
                 Write "<tr><td class='id-cell'>"_i_"</td>"
-                For idx=1:1:$ListLength(staticLangs) {
-                    Set curL = $ZConvert($ListGet(staticLangs, idx), "L")
+                Set iter = availableLangsArr.%GetIterator()
+                While iter.%GetNext(,.curL) {
                     Set val = $Get(^IRIS.Msg(currentDom, curL, i), "")
                     Write "<td>"_$ZConvert(val,"O","HTML")_"</td>"
                 }
                 Write "</tr>"
             }
             Write "</tbody></table>"
-        } Catch { Write "Error Loading Data." }
+        } Catch ex { Write "Error Loading Data."_ex.BinDisplayString() }
     }
     &html<
         </div>
@@ -204,7 +217,12 @@ XData Style
 {
 <data>
 	<![CDATA[
-:root{--isc-blue:#2b3589;--isc-teal:#18a99e;--border:#dee2e6}body{font-family:'Segoe UI',sans-serif;display:flex;height:100vh;margin:0;background:#fff;overflow:hidden}#sidebar{width:260px;background:#f8f9fa;border-right:1px solid var(--border);display:flex;flex-direction:column}.sidebar-header{padding:15px;border-bottom:1px solid var(--border);font-size:.8em;font-weight:700;color:#666}.ns-select{width:100%;padding:6px;margin-top:5px;border:1px solid var(--border);border-radius:4px}.domain-list{flex-grow:1;overflow-y:auto}.domain-link{padding:10px 15px;cursor:pointer;display:block;color:#444;text-decoration:none;border-bottom:1px solid #eee;font-size:.9em}.active{background:#fff;color:var(--isc-blue)!important;font-weight:700;border-left:4px solid var(--isc-blue)}#main{flex-grow:1;display:flex;flex-direction:column}.header-bar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fff}#addForm{background:#f1f3f5;padding:12px 20px;border-bottom:1px solid var(--border);display:none}.form-row{display:flex;align-items:center;gap:20px;white-space:nowrap}.form-item{display:flex;align-items:center;gap:8px}.form-item label{font-size:.8em;font-weight:700;color:#444}input,select{padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:.9em}.scroll-area{flex-grow:1;padding:20px;overflow:auto}.msg-table{width:100%;border-collapse:collapse;font-size:.82em;table-layout:fixed}.msg-table th{background:#fdfdfd;padding:8px;border:1px solid var(--border);position:sticky;top:0;color:var(--isc-blue);text-align:center}.msg-table td{padding:8px;border:1px solid var(--border);word-wrap:break-word}.id-cell{font-family:monospace;color:var(--isc-teal);background:#fafafa;font-weight:700;width:140px}.btn{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:700;transition:.2s}.btn-teal{background:var(--isc-teal);color:#fff}.btn-outline{background:#fff;border:1px solid var(--border);color:#555;width:100%;margin-top:10px;font-size:.85em}.btn-outline:hover{background:#eee}.btn-toggle{background:#6c757d;color:#fff}
+:root{--isc-blue:#2b3589;--isc-teal:#18a99e;--border:#dee2e6}body{font-family:sans-serif;display:flex;height:100vh;margin:0;background:#fff;overflow:hidden}#sidebar{width:260px;background:#f8f9fa;border-right:1px solid var(--border);display:flex;flex-direction:column}.sidebar-header{padding:15px;border-bottom:1px solid var(--border);font-size:.8em;font-weight:700;color:#666}.ns-select{width:100%;padding:6px;margin-top:5px;border:1px solid var(--border);border-radius:4px}.domain-list{flex-grow:1;overflow-y:auto}
+.domain-link{padding:10px 15px;cursor:pointer;display:block;color:#444;text-decoration:none;border-bottom:1px solid #eee;font-size:.9em}.active{background:#fff;color:var(--isc-blue)!important;font-weight:700;border-left:4px solid var(--isc-blue)}#main{flex-grow:1;display:flex;flex-direction:column}.header-bar{padding:10px 20px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:#fff}#addForm{background:#f1f3f5;padding:12px 20px;border-bottom:1px solid var(--border);display:none}
+.form-row{display:flex;align-items:center;gap:20px;white-space:nowrap}.form-item{display:flex;align-items:center;gap:8px}.form-item label{font-size:.8em;font-weight:700;color:#444}input,select{padding:5px 8px;border:1px solid var(--border);border-radius:4px;font-size:.9em}.scroll-area{flex-grow:1;padding:20px;overflow:auto}.msg-table{width:100%;border-collapse:collapse;font-size:.82em;table-layout:fixed}.msg-table th{background:#fdfdfd;padding:8px;border:1px solid var(--border);position:sticky;top:0;color:var(--isc-blue);text-align:center}.msg-table td{padding:8px;border:1px solid var(--border);word-wrap:break-word}.id-cell{font-family:monospace;color:var(--isc-teal);background:#fafafa;font-weight:700;width:140px}
+.btn{padding:6px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:700;transition:.2s;display:inline-flex;align-items:center;gap:5px}.btn-teal{background:var(--isc-teal);color:#fff}.btn-outline{background:#fff;border:1px solid var(--border);color:#555;font-size:.85em}.btn-outline:hover{background:#eee}.modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background:rgba(0,0,0,.4)}.modal-content{background:#fff;margin:10% auto;padding:20px;border-radius:8px;width:450px;box-shadow:0 4px 12px rgba(0,0,0,.2)}.modal-header{border-bottom:1px solid #eee;padding-bottom:10px;margin-bottom:15px;font-weight:700;color:var(--isc-blue)}
+.msg-table tr:nth-child(even) {background: #f2f2f2;}
+
 ]]>
 	</data>
 }
@@ -236,6 +254,12 @@ ClassMethod Scripts()
 {
     &html<
     <script language="javascript">
+    	const urlParams = new URLSearchParams(window.location.search);
+    	const MessageDomain = urlParams.get('domain') || "";
+    	const currentNS = urlParams.get('ns') || "";
+        if (MessageDomain) {
+        	document.getElementById('headerDomain').innerHTML = " &gt; " + MessageDomain;
+    	}
         function toggleAddForm() {
             var f = document.getElementById('addForm');
             f.style.display = (f.style.display === 'none' || f.style.display === '') ? 'block' : 'none';
@@ -270,7 +294,49 @@ ClassMethod Scripts()
 		    };
 		    reader.readAsText(file);
 		}
+        function saveSettings() {
+            const dir = document.getElementById('exportDir').value;
+            status = #server(..SaveSettings(dir))#;
+       		if (status==1){
+	       		alert("Saved successful!");
+            	closeSettings();
+		    }
+		    else {
+			    alert("Failed to save: " + status);
+		    }
+        }
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('exportDir').value = #server(..GetExportLoc())#;
+        }
 
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+        function exportDomain() {
+            const domainName = MessageDomain;
+            const namespace = currentNS;
+
+            if (!domainName) {
+                alert("Please select a domain first.");
+                return;
+            }
+            if (!exportDir) {
+                alert("Please configure export directory in Settings.");
+                toggleSettingsModal(true);
+                return;
+            }
+
+            // Calls your method with (DomainName, DirectoryPath)
+            // Replace 'YourExportMethod' with the actual server-side method name
+            let status = #server(..ExportAllLangForDomainList(domainName,namespace))#;
+
+            if (status == 1) {
+                alert("Exported " + domainName + " successfully.");
+            } else {
+                alert("Export failed: " + status);
+            }
+        }
 
     </script>
    >
@@ -281,7 +347,7 @@ ClassMethod ImportLocalization(pData As %String) As %Status
 	Set status = 1
 	Try {
         Set xmlfile = ##class(%Stream.FileCharacter).%New()
-        Set xmlfile.Filename = "messages.xmld"
+        Set xmlfile.Filename = "messages.xml"
         Do xmlfile.Write(pData)
         Set fileName = xmlfile.Filename
    		Set st = xmlfile.%Save()
@@ -304,6 +370,53 @@ ClassMethod ImportLocalization(pData As %String) As %Status
         Set status = ex.BinDisplayString()
     }
     Return status
+}
+
+ClassMethod SaveSettings(pExportDir)
+{
+    Set defaultDir = $System.Util.ManagerDirectory()
+    Set ^zaxk.zpm=pExportDir
+	If ##class(%File).DirectoryExists(pExportDir)&&(pExportDir'="") {
+		Set ^LocalizationLab.Export("dir") = pExportDir
+	}
+	Else {
+        Set ^LocalizationLab.Export("dir") = defaultDir
+		Quit "directory not exist: set to default: "_defaultDir
+	}
+	Quit $$$OK
+}
+
+ClassMethod GetExportLoc() [ CodeMode = expression ]
+{
+$Get(^LocalizationLab.Export("dir"))
+}
+
+ClassMethod ExportAllLangForDomainList(
+	pDomain As %String = "",
+	pNamespace)
+{
+	Set status = 1
+	Set langArr= ##class(%MessageDictionary).GetLanguages()
+	Set dir = ..GetExportLoc()
+    If (dir="") {
+        Set dir = $System.Util.ManagerDirectory()
+    }
+	Set timestamp=$Translate($Horolog,",","-")
+	New $Namespace
+	Try {
+		Set $Namespace = pNamespace
+		For {
+			Set lang=langArr.GetNext(.key)
+			Quit:lang=""
+            Continue:'$Data(^IRIS.Msg(pDomain,lang))
+			Set fileName=##class(%File).NormalizeFilename(dir_"\"_pDomain_"_"_timestamp_"_"_lang_".xml")
+			Set status = ##class(%MessageDictionary).ExportDomainList(fileName,pDomain,lang)
+		}
+	}
+	Catch ex{
+		Set status = ex.BinDisplayString()
+	}
+	Quit status
 }
 
 }
