@@ -51,12 +51,23 @@ Select a domain from the **Left Panel** (Neutral Gray) to load the translation m
     * **Text**: Enter the localized string.
 3.  Click **Save** to update the `^IRIS.Msg` global.
 
-<img width="1919" height="742" alt="image" src="https://github.com/user-attachments/assets/978b7bf5-9110-418d-9ef8-dacbc5a88ab2" />
+### Exporting a Message Dictionary
+1.  **Configure Export Path**: 
+    * Click the **Settings** (⚙️) icon in the header.
+    * Enter your target directory path (e.g., `C:\InterSystems\Exports\`).
+    * Click **Save Setting** to store this as your default path.
+2.  **Select & Export**:
+    * Select a **Message Domain** from the left-hand sidebar.
+    * Click the **Export** button. 
+    * The system will export the selected domain's dictionary as an XML file to your saved directory.
 
-## 📂 Project Structure
+### Importing a Message Dictionary
+1.  **Select Source**: Click the **Import XML** button in the header bar.
+2.  **Choose File**: Select the `.xml` message dictionary file from your local machine.
+3.  **Process**: The system will automatically parse the file and update the message grid. Upon success, the page will refresh to display the newly imported strings.
 
-* `LocalizationLab.StrLocalization.cls`: The core logic, containing both the CSP rendering and the server-side ObjectScript.
-* `README.md`: Documentation.
+
+<img width="1919" height="682" alt="image" src="https://github.com/user-attachments/assets/bc16560a-1bc6-4364-b94d-a680e283b05d" />
 
 ## 📜 License
 
