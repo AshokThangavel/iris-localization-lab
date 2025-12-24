@@ -18,23 +18,29 @@ ClassMethod OnRenderScreen()
             <select class="ns-select" onchange="location.href='?ns='+this.value">
     >
     Do ##class(%SYS.Namespace).ListAll(.nsList)
-    Set n = "" For { Set n = $Order(nsList(n)) Quit:n=""
+    Set n = ""
+    For {
+        Set n = $Order(nsList(n)) Quit:n=""
         Set sel = $Select(n=currentNS:"selected", 1:"")
         Write "<option value='"_n_"' "_sel_">"_n_"</option>",!
     }
     &html<
-            </select>
+        </select>
             <button class="btn btn-outline" onclick="createNewDomain()">+ New Domain</button>
         </div>
         <div class="domain-list">
     >
     New $Namespace
-    Try { Set $Namespace = currentNS
-        Set dom = "" For { Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
+    Try {
+        Set $Namespace = currentNS
+        Set dom = ""
+        For {
+            Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
             Set cls = $Select(dom=currentDom:"active", 1:"")
             Write "<a href='?ns="_currentNS_"&domain="_dom_"' class='domain-link "_cls_"'>"_dom_"</a>",!
         }
-    } Catch {}
+    }
+    Catch {}
     &html<
         </div>
     </div>
@@ -97,16 +103,28 @@ ClassMethod OnRenderScreen()
 
         <div class="scroll-area">
     >
-    If (currentDom '= "") {
+    If currentDom '= "" {
         New $Namespace
-        Try { Set $Namespace = currentNS
-            Kill ids Set l = "" For { Set l = $Order(^IRIS.Msg(currentDom, l)) Quit:l=""
-                Set i = "" For { Set i = $Order(^IRIS.Msg(currentDom, l, i)) Quit:i=""  Set ids(i)="" }
+        Try {
+            Set $Namespace = currentNS
+            Kill ids
+            Set l = ""
+            For {
+                Set l = $Order(^IRIS.Msg(currentDom, l)) Quit:l=""
+                Set i = ""
+                For {
+                    Set i = $Order(^IRIS.Msg(currentDom, l, i)) Quit:i=""
+                    Set ids(i)=""
+                }
             }
             Write "<table class='msg-table'><thead><tr><th style='width:140px'>MESSAGE ID</th>"
-            For idx=1:1:$ListLength(staticLangs) { Write "<th>"_$ListGet(staticLangs, idx)_"</th>" }
+            For idx=1:1:$ListLength(staticLangs) {
+                Write "<th>"_$ListGet(staticLangs, idx)_"</th>"
+            }
             Write "</tr></thead><tbody>"
-            Set i = "" For { Set i = $Order(ids(i)) Quit:i=""
+            Set i = ""
+            For {
+                Set i = $Order(ids(i)) Quit:i=""
                 Write "<tr><td class='id-cell'>"_i_"</td>"
                 For idx=1:1:$ListLength(staticLangs) {
                     Set curL = $ZConvert($ListGet(staticLangs, idx), "L")
@@ -266,7 +284,7 @@ ClassMethod ImportLocalization(pData As %String) As %Status
         Set xmlfile.Filename = "messages.xmld"
         Do xmlfile.Write(pData)
         Set fileName = xmlfile.Filename
-   		Set st=xmlfile.%Save()
+   		Set st = xmlfile.%Save()
    		If $$$ISOK(st) {
 	   		Set status = ##class(%MessageDictionary).Import(fileName)
 	   		If $$$ISOK(status) {

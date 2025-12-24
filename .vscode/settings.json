@@ -5,7 +5,6 @@
         "ns": "USER"
     },
     // Force formatting rules
-    "intersystems.testingManager.client.relativeTestRoot": "tests/unit_tests",
     "objectscript.multilineMethodArgs": true,
     "intersystems.language-server.formatting.expandClassNames": false,
     "intersystems.language-server.formatting.commands.case": "word",
