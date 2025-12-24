@@ -1,8 +1,6 @@
-# IRIS-Localization-Lab 🌐
+# IRIS-Localization-Lab
 
 A lightweight, high-performance web interface for managing InterSystems IRIS Localization Globals (`^IRIS.Msg`). This tool provides a professional pivot-style dashboard to manage translations across multiple namespaces and domains with ease.
-
-
 
 ## ✨ Features
 
@@ -52,6 +50,8 @@ Select a domain from the **Left Panel** (Neutral Gray) to load the translation m
     * **Message ID**: Provide your own or leave blank to auto-generate a hash.
     * **Text**: Enter the localized string.
 3.  Click **Save** to update the `^IRIS.Msg` global.
+
+<img width="1919" height="742" alt="image" src="https://github.com/user-attachments/assets/978b7bf5-9110-418d-9ef8-dacbc5a88ab2" />
 
 ## 📂 Project Structure
 
