@@ -18,8 +18,7 @@ ClassMethod OnRenderScreen()
             <select class="ns-select" onchange="location.href='?ns='+this.value">
     >
     Do ##class(%SYS.Namespace).ListAll(.nsList)
-    Set n = ""
-    For { Set n = $Order(nsList(n)) Quit:n=""
+    Set n = "" For { Set n = $Order(nsList(n)) Quit:n=""
         Set sel = $Select(n=currentNS:"selected", 1:"")
         Write "<option value='"_n_"' "_sel_">"_n_"</option>",!
     }
@@ -30,11 +29,8 @@ ClassMethod OnRenderScreen()
         <div class="domain-list">
     >
     New $Namespace
-    Try {
-        Set $Namespace = currentNS
-        Set dom = ""
-        For {
-            Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
+    Try { Set $Namespace = currentNS
+        Set dom = "" For { Set dom = $Order(^IRIS.Msg(dom)) Quit:dom=""
             Set cls = $Select(dom=currentDom:"active", 1:"")
             Write "<a href='?ns="_currentNS_"&domain="_dom_"' class='domain-link "_cls_"'>"_dom_"</a>",!
         }
@@ -44,10 +40,16 @@ ClassMethod OnRenderScreen()
     </div>
 
     <div id="main">
-        <div class="header-bar">
-            <h3 style="margin:0; color:var(--isc-blue);">#(currentDom)#</h3>
-            <button class="btn btn-teal" onclick="toggleAddForm()">+Add New String</button>
-        </div>
+       <div class="header-bar">
+    <h3 style="margin:0; color:var(--isc-blue);">Localization Manager</h3>
+    <div style="display:flex; gap:10px;">
+        <input type="file" id="importFile" style="display:none" accept=".xml" onchange="handleFileSelect(this)">
+        <button class="btn btn-outline" style="margin-top:0; width:auto;" onclick="document.getElementById('importFile').click()">
+            <i class="fa fa-file-import"></i> Import XML
+        </button>
+        <button class="btn btn-teal" onclick="toggleAddForm()">+ Add New String</button>
+    </div>
+</div>
 
         <div id="addForm">
             <form method="POST" class="form-row">
@@ -98,23 +100,13 @@ ClassMethod OnRenderScreen()
     If (currentDom '= "") {
         New $Namespace
         Try { Set $Namespace = currentNS
-            Kill ids Set l = ""
-            For {
-                Set l = $Order(^IRIS.Msg(currentDom, l)) Quit:l=""
-                Set i = ""
-                For {
-                    Set i = $Order(^IRIS.Msg(currentDom, l, i))
-                    Quit:i=""
-                    Set ids(i)=""
-                }
+            Kill ids Set l = "" For { Set l = $Order(^IRIS.Msg(currentDom, l)) Quit:l=""
+                Set i = "" For { Set i = $Order(^IRIS.Msg(currentDom, l, i)) Quit:i=""  Set ids(i)="" }
             }
             Write "<table class='msg-table'><thead><tr><th style='width:140px'>MESSAGE ID</th>"
-            For idx=1:1:$ListLength(staticLangs) {
-                Write "<th>"_$ListGet(staticLangs, idx)_"</th>"
-            }
+            For idx=1:1:$ListLength(staticLangs) { Write "<th>"_$ListGet(staticLangs, idx)_"</th>" }
             Write "</tr></thead><tbody>"
-            Set i = ""
-            For { Set i = $Order(ids(i)) Quit:i=""
+            Set i = "" For { Set i = $Order(ids(i)) Quit:i=""
                 Write "<tr><td class='id-cell'>"_i_"</td>"
                 For idx=1:1:$ListLength(staticLangs) {
                     Set curL = $ZConvert($ListGet(staticLangs, idx), "L")
@@ -208,7 +200,7 @@ ClassMethod OnPreHTTP() As %Boolean
         Set lang = $Get(%request.Data("newLang",1))
         Set txt  = $Get(%request.Data("newText",1))
         Set id   = $Get(%request.Data("newID",1))
-        If (id = "") { Set id = $ZCRC(txt,7) }
+        If (id = "") { Set id = $ZCrc(txt,7) }
 
         New $Namespace
         Try {
@@ -240,8 +232,60 @@ ClassMethod Scripts()
             const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
             window.history.replaceState({path: cleanUrl}, '', cleanUrl);
         }
+
+
+        function handleFileSelect(input) {
+		    const file = input.files[0];
+		    if (!file) return;
+
+		    const reader = new FileReader();
+		    reader.onload = function(e) {
+		        const fileContent = e.target.result;
+		        status = #server(..ImportLocalization(fileContent))#;
+		        if (status==1){
+			        alert("Import successful!");
+			        window.location.reload()
+		        }
+		        else {
+			        alert("Import failed: " + status);
+		        }
+		    };
+		    reader.readAsText(file);
+		}
+
+
     </script>
    >
+}
+
+ClassMethod ImportLocalization(pData As %String) As %Status
+{
+	Set status = 1
+	Try {
+        Set xmlfile = ##class(%Stream.FileCharacter).%New()
+        Set xmlfile.Filename = "messages.xmld"
+        Do xmlfile.Write(pData)
+        Set fileName = xmlfile.Filename
+   		Set st=xmlfile.%Save()
+   		If $$$ISOK(st) {
+	   		Set status = ##class(%MessageDictionary).Import(fileName)
+	   		If $$$ISOK(status) {
+           		Set status =1
+        	}
+        	Else {
+            	Set err = $System.Status.GetErrorText(status)
+            	Set status =err
+        	}
+	   		Do ##class(%File).Delete(fileName)
+   		}
+   		Else {
+	   		Set status= $System.Status.GetErrorText(st)
+   		}
+    }
+    Catch ex {
+        Set status = ex.BinDisplayString()
+    }
+    Return status
 }
 
 }
